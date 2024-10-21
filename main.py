@@ -1,9 +1,12 @@
 from flask import Flask, request, jsonify, send_from_directory
 import os
+import threading
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+file_lock = threading.Lock()
 
 @app.route('/')
 def home():
@@ -27,7 +30,8 @@ def upload_file():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    with file_lock:
+        return send_from_directory(UPLOAD_FOLDER, filename)
 
 
 if __name__ == '__main__':
