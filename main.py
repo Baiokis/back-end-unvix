@@ -9,8 +9,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def home():
-    return "Servidor está rodando!"
+    return "Server is running!"
 
+# Route for file upload
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'fbxFile' not in request.files:
@@ -27,18 +28,18 @@ def upload_file():
     else:
         return jsonify({"error": "File type not supported"}), 400
 
-# Novo endpoint para obter o nome do arquivo mais recente
+# Route to get the name of the most recent file
 @app.route('/get-latest-file', methods=['GET'])
 def get_latest_file():
     files = os.listdir(UPLOAD_FOLDER)
     fbx_files = [f for f in files if f.endswith('.fbx')]
     if fbx_files:
-        # Pega o arquivo mais recente com base no tempo de criação
         latest_file = max(fbx_files, key=lambda f: os.path.getctime(os.path.join(UPLOAD_FOLDER, f)))
         return jsonify({"filename": latest_file}), 200
     else:
         return jsonify({"error": "No FBX files found"}), 404
 
+# Route to access files from the uploads folder
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -46,15 +47,12 @@ def uploaded_file(filename):
     if not os.path.exists(file_path):
         return jsonify({"error": "File not found"}), 404
     
-    # Enviar o arquivo solicitado
     response = send_from_directory(UPLOAD_FOLDER, filename)
-    
-    # Iniciar uma thread para apagar os arquivos após 10 segundos
     threading.Thread(target=delete_files_after_delay, args=(10,)).start()
     
     return response
 
-# Função para apagar os arquivos da pasta uploads após o delay
+# Function to delete files from the uploads folder after a delay
 def delete_files_after_delay(delay):
     time.sleep(delay)
     for filename in os.listdir(UPLOAD_FOLDER):
@@ -62,9 +60,9 @@ def delete_files_after_delay(delay):
         try:
             if os.path.isfile(file_path):
                 os.unlink(file_path)
-                print(f"Arquivo {filename} removido.")
+                print(f"File {filename} removed.")
         except Exception as e:
-            print(f"Erro ao tentar apagar o arquivo {filename}: {e}")
+            print(f"Error while trying to delete file {filename}: {e}")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
